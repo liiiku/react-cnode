@@ -20,6 +20,10 @@ const config = webpackMerge(baseConfig, {
   plugins: [
     new HTMLPlugin({ // 服务端渲染的时候，需要用到html，因为要直接返回这个html，所以这里要根据一个tpl.html 直接生成一个用于返回的html
       template: path.join(__dirname, '../client/template.html')
+    }),
+    new HTMLPlugin({
+      template: '!!ejs-compiled-loader!' + path.join(__dirname, '../client/server.template.ejs'),
+      filename: 'server.ejs'
     })
   ]
 })

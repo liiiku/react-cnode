@@ -11,8 +11,21 @@ export default class TopicList extends React.Component {
 
     this.changeName = this.changeName.bind(this)
   }
+
   componentDidMount() {
     // do something here
+  }
+
+  // 在dev-static中调用asyncBootstrapper方法的时候，会执行这个组件里面的这个方法，等他执行完成之后，才会继续的渲染的工作
+  // 所以就可以再这里面去执行数据的初始化
+  asyncBootstrap() {
+    console.log(22)
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        this.props.appState.count = 3
+        resolve(true) // 这里要resolve(true) 会根据true 或者false来判断方法有没有执行成功
+      })
+    })
   }
 
   changeName(event) {
