@@ -12,6 +12,7 @@ const serialize = require('serialize-javascript')
 const ReactDomServer = require('react-dom/server')
 const asyncBootstrapper = require('react-async-bootstrapper').default // 如果是import export这样的，通过require引入的时候要.default
 // const asyncBootstrapper = require('react-async-bootstrapper') // 新版本不用default了
+const Helmet = require('react-helmet').default
 
 const serverConfig = require('../../build/webpack.config.server')
 
@@ -30,7 +31,22 @@ const getTemplate = () => {
   })
 }
 
-const Module = module.constructor // 创建一个新的module
+// const Module = module.constructor // 创建一个新的module
+// 这里require进来的module就是node的module.exports的module
+const NativeModule = require('module')
+const vm = require('vm')
+
+const getModuleFromString = (bundle, filename) => {
+  const m = { exports: {} }
+  const wrapper = NativeModule.wrap(bundle)
+  const script = new vm.Script(wrapper, {
+    filename: filename,
+    displayErrors: true
+  })
+  const result = script.runInThisContext()
+  result.call(m.exports, m.exports, require, m)
+  return m
+}
 
 const mfs = new MemoryFs()
 // 这个compiler会实时监听serverConfig中entry入口的文件是不是有变化，一旦有变化，会重新去打包
@@ -53,8 +69,9 @@ serverCompiler.watch({}, (err, stats) => { // stats webpack在打包的过程当
   const bundlePath = path.join(serverConfig.output.path, serverConfig.output.filename)
   const bundle = mfs.readFileSync(bundlePath, 'utf-8') // mfs.readFileSync读出来的是一个string类型
   // 字符串如果转化成模块呢？
-  const m = new Module()
-  m._compile(bundle, 'server-entry.js') // 动态编译一个文件，第二个参数：指定module的名字，因为require的时候是通过文件名去require他的，同样的动态编译的一个模块，也需要指定一个文件名，否则无法在缓存当中存储这部分内容，并且在内容上也拿不到这个内容
+  // const m = new Module()
+  // m._compile(bundle, 'server-entry.js') // 动态编译一个文件，第二个参数：指定module的名字，因为require的时候是通过文件名去require他的，同样的动态编译的一个模块，也需要指定一个文件名，否则无法在缓存当中存储这部分内容，并且在内容上也拿不到这个内容
+  const m = getModuleFromString(bundle, 'server-entry.js')
   serverBundle = m.exports.default
   createStoreMap = m.exports.createStoreMap
   console.log(60, createStoreMap)
@@ -91,11 +108,16 @@ module.exports = function (app) {
           return
         }
         console.log(79, stores.appState.count)
+        const helmet = Helmet.rewind()
         const state = getStoreState(stores) // 但是这个新的state怎么插入到html中呢？
         // res.send(template.replace('<!-- app -->', content))
         const html = ejs.render(template, {
           appString: content,
-          initialState: serialize(state)
+          initialState: serialize(state),
+          meta: helmet.meta.toString(),
+          title: helmet.title.toString(),
+          style: helmet.style.toString(),
+          link: helmet.link.toString()
         })
         res.send(html)
       })

@@ -1,6 +1,7 @@
 import React from 'react'
 import { observer, inject } from 'mobx-react'
 import PropTypes from 'prop-types'
+import Helmet from 'react-helmet'
 import { AppState } from '../../store/app-state'
 
 // 定义在provider上叫什么名字，这里injecg就叫什么名字
@@ -35,6 +36,10 @@ export default class TopicList extends React.Component {
   render() {
     return (
       <div>
+        <Helmet>
+          <title>topic list</title>
+          <meta name="description" content="this is description" />
+        </Helmet>
         <input type="text" onChange={this.changeName} /> {/* 调用onChange的时候，这个时候this的指向已经不是组件内部了 */}
         <span>{this.props.appState.msg}</span>
       </div>

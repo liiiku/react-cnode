@@ -7,6 +7,7 @@ module.exports = webpackMerge(baseConfig, {
   entry: {
     app: path.join(__dirname, '../client/server.entry.js')
   },
+  externals: Object.keys(require('../package-lock.json').dependencies),
   output: {
     filename: 'server-entry.js', // 服务端没有浏览器缓存这个概念，所以直接写死就好
     libraryTarget: 'commonjs2' // 打包出来的js使用的一种模块的方案
